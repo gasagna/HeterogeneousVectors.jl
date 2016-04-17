@@ -109,14 +109,16 @@ type HVector{T<:Number, S<:Integer} <: AbstractVector{T}
     locked::Bool
     pushed::Int
     HVector() = new(T[], S[0], true, 0)
-    function HVector(data::Vector{T}, idxs::Vector{S}) 
-        issorted(idxs) || error("unsorted indices")
-        length(data) == idxs[end] || error("wrong indices")
-        idxs[1] == 0 || error("wrong indices")
+    function HVector(data::Vector{T}, idxs::Vector{S}, chksorted::Bool=true) 
+        chksorted && (issorted(idxs) || error("unsorted `idxs` vector"))
+        length(data) == idxs[end] || error("length of `data` different " * 
+                                           "from last element of `idxs`")
+        idxs[1] == 0 || error("first element of `idxs` must be zero")
         new(data, idxs, true, 0)
     end
 end
-HVector{T, S}(data::Vector{T}, idxs::Vector{S}) = HVector{T, S}(data, idxs) 
+HVector{T, S}(data::Vector{T}, idxs::Vector{S}, chksorted::Bool=true) = 
+    HVector{T, S}(data, idxs, chksorted) 
 
 eltype{T}(hx::HVector{T}) = T
 idxtype{T, S}(hx::HVector{T, S}) = S

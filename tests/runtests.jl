@@ -35,6 +35,11 @@ let
     idxs = UInt32[5, 2, 7, 6]
     @test_throws ErrorException xs = HVector(data, idxs)
 
+    # from unsorted indices, does not throw
+    data =  Int64[5, 8, 3, 1, 2, 4]
+    idxs = UInt32[0, 2, 7, 6]
+    xs = HVector(data, idxs, false)
+
 end
 
 
