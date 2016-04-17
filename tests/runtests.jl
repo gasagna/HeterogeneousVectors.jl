@@ -1,9 +1,46 @@
 using Base.Test
 using HVectors
 
+# test constructors
+let 
+    xs = HVector{Int64, UInt64}()
+    @test eltype(xs) == Int64
+    @test idxtype(xs) == UInt64
+
+    # from data
+    data =  Int64[5, 8, 3, 1, 2, 4]
+    idxs = UInt32[0, 2, 5, 6]
+
+    xs = HVector(data, idxs)
+    @test eltype(xs) == Int64
+    @test idxtype(xs) == UInt32
+    @test length(xs) == 3
+    @test size(xs) == (3, )
+    @test xs[1] == [5, 8]
+    @test xs[2] == [3, 1, 2]
+    @test xs[3] == [4]
+
+    # from too long indices data
+    data =  Int64[5, 8, 3, 1, 2, 4]
+    idxs = UInt32[0, 2, 5, 6, 7]
+    @test_throws ErrorException xs = HVector(data, idxs)
+
+    # first index must be zero
+    data =  Int64[5, 8, 3, 1, 2, 4]
+    idxs = UInt32[1, 2, 5, 6]
+    @test_throws ErrorException xs = HVector(data, idxs)
+
+    # from unsorted indices
+    data =  Int64[5, 8, 3, 1, 2, 4]
+    idxs = UInt32[5, 2, 7, 6]
+    @test_throws ErrorException xs = HVector(data, idxs)
+
+end
+
+
 
 # test pushing arrays
-let xs = HVector{Float64}()
+let xs = HVector{Float64, UInt32}()
     push!(xs, [1.0])
     push!(xs, [1.0, 2.0])
     push!(xs, [1.0, 2.0, 3.0])
@@ -28,7 +65,7 @@ let xs = HVector{Float64}()
 end
 
 # test locking mechanism
-let xs = HVector{Float64}()
+let xs = HVector{Float64, UInt32}()
     @test islocked(xs) == true
     unlock(xs)
     @test islocked(xs) == false
@@ -48,7 +85,7 @@ let xs = HVector{Float64}()
 end
 
 # test pushing values
-let xs = HVector{Float64}()
+let xs = HVector{Float64, UInt32}()
     # push one first
     unlock(xs)
     push!(xs, 1.0); push!(xs, 2.0); push!(xs, 3.0)
@@ -65,7 +102,7 @@ let xs = HVector{Float64}()
 end
 
 # test macro
-let xs = HVector{Float64}()
+let xs = HVector{Float64, UInt32}()
 
     @unlocked xs for i = 1:5
         push!(xs, Float64(i))
@@ -76,7 +113,7 @@ let xs = HVector{Float64}()
 end
 
 # test print
-let xs = HVector{Int64}()
+let xs = HVector{Int64, UInt32}()
     srand(5)
     for j = 1:2
         @unlocked xs for i = 1:rand(2:5)

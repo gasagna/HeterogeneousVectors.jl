@@ -9,7 +9,7 @@ import Base: length,
              lock, 
              unlock
 
-export HVector, islocked, @unlocked
+export HVector, islocked, @unlocked, idxtype
 
 """
     The type `HVector` is a container type that mimics the behaviour of an 
@@ -103,25 +103,34 @@ export HVector, islocked, @unlocked
     to achieve the same thing and achieve the same effect.
 
 """
-type HVector{T<:Number} <: AbstractVector{T}
+type HVector{T<:Number, S<:Integer} <: AbstractVector{T}
     data::Vector{T}
-    idxs::Vector{Int64}
+    idxs::Vector{S}
     locked::Bool
-    pushed::Int64
-    HVector() = new(T[], Int64[0], true, 0)
+    pushed::Int
+    HVector() = new(T[], S[0], true, 0)
+    function HVector(data::Vector{T}, idxs::Vector{S}) 
+        issorted(idxs) || error("unsorted indices")
+        length(data) == idxs[end] || error("wrong indices")
+        idxs[1] == 0 || error("wrong indices")
+        new(data, idxs, true, 0)
+    end
 end
+HVector{T, S}(data::Vector{T}, idxs::Vector{S}) = HVector{T, S}(data, idxs) 
 
 eltype{T}(hx::HVector{T}) = T
+idxtype{T, S}(hx::HVector{T, S}) = S
 size(hx::HVector) = (length(hx), )
 length(hx::HVector) = length(hx.idxs) - 1
-getindex(hx::HVector, i) = HTuple(hx, hx.idxs[i]+1, hx.idxs[i+1])
+getindex{T, S}(hx::HVector{T, S}, i) = 
+    HTuple(hx, hx.idxs[i]+one(S), hx.idxs[i+1])
 
 # push a full vector - only works if storage is locked
-function push!{T}(hx::HVector{T}, x::AbstractVector{T})
+function push!{T, S}(hx::HVector{T, S}, x::AbstractVector{T})
     !(islocked(hx)) && error("HVector is unlocked. Cannot push new array!") 
     # this triggers a bug in append, so we enforce the eltype of `x` to `T`
     append!(hx.data, x)
-    push!(hx.idxs, hx.idxs[end] + length(x))
+    push!(hx.idxs, hx.idxs[end] + S(length(x)))
     hx
 end
 
@@ -150,13 +159,13 @@ macro unlocked(hx, expr)
 end
 
 # ~~~ HTuple ~~~
-immutable HTuple{T<:Number} <: AbstractVector{T}
-    hx::HVector{T}
-    start::Int64
-    stop::Int64
+immutable HTuple{T<:Number, S<:Integer} <: AbstractVector{T}
+    hx::HVector{T, S}
+    start::Int
+    stop::Int
 end
-HTuple(hx::HVector, start::Int64, stop::Int64) = 
-    HTuple{eltype(hx)}(hx, start, stop)
+HTuple{T, S}(hx::HVector{T, S}, start::Integer, stop::Integer) = 
+    HTuple{T, S}(hx, start, stop)
 
 eltype{T}(x::HTuple{T}) = T
 size(x::HTuple) = (length(x), )
