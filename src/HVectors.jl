@@ -8,7 +8,8 @@ import Base: length,
              size,
              lock, 
              unlock,
-             ==
+             ==,
+             call
 
 export HVector, islocked, @unlocked, idxtype
 
@@ -119,7 +120,11 @@ type HVector{T<:Number, S<:Integer} <: AbstractVector{T}
     end
 end
 HVector{T, S}(data::Vector{T}, idxs::Vector{S}, chksorted::Bool=true) = 
-    HVector{T, S}(data, idxs, chksorted) 
+    HVector{T, S}(data, idxs, chksorted)
+
+# constructor for default idx type
+# see https://groups.google.com/forum/#!topic/julia-users/gXlS6XS8S3I
+call{T}(::Type{HVector{T}}) = HVector{T, UInt32}()
 
 ==(hxa::HVector, hxb::HVector) =
    (hxa.data == hxb.data && hxa.idxs == hxb.idxs)

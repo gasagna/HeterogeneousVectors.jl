@@ -52,7 +52,13 @@ let
     data =  Int64[5, 8, 3, 1, 2, 4]
     idxs = UInt32[0, 2, 7, 6]
     xs = HVector(data, idxs, false)
+end
 
+# test constructor with default idxs type
+let 
+    xs = HVector{Float64}()
+    @test eltype(xs) == Float64
+    @test idxtype(xs) == UInt32
 end
 
 # test pushing arrays
