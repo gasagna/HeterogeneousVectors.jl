@@ -7,7 +7,8 @@ import Base: length,
              eltype,
              size,
              lock, 
-             unlock
+             unlock,
+             ==
 
 export HVector, islocked, @unlocked, idxtype
 
@@ -120,6 +121,8 @@ end
 HVector{T, S}(data::Vector{T}, idxs::Vector{S}, chksorted::Bool=true) = 
     HVector{T, S}(data, idxs, chksorted) 
 
+==(hxa::HVector, hxb::HVector) =
+   (hxa.data == hxb.data && hxa.idxs == hxb.idxs)
 eltype{T}(hx::HVector{T}) = T
 idxtype{T, S}(hx::HVector{T, S}) = S
 size(hx::HVector) = (length(hx), )

@@ -1,6 +1,19 @@
 using Base.Test
 using HVectors
 
+# test ==
+
+let 
+    xsa = HVector([1, 2, 3, 4], [0, 2, 4])
+    xsb = HVector([1, 2, 3, 4], [0, 2, 4])
+    @test xsa == xsb
+
+    xsa = HVector([1, 2, 3, 4], [0, 2, 4])
+    xsb = HVector([1, 2, 3, 5], [0, 2, 4])
+    @test xsa !== xsb
+end
+
+
 # test constructors
 let 
     xs = HVector{Int64, UInt64}()
@@ -41,8 +54,6 @@ let
     xs = HVector(data, idxs, false)
 
 end
-
-
 
 # test pushing arrays
 let xs = HVector{Float64, UInt32}()
