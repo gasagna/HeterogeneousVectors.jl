@@ -133,7 +133,7 @@ idxtype{T, S}(hx::HVector{T, S}) = S
 size(hx::HVector) = (length(hx), )
 length(hx::HVector) = length(hx.idxs) - 1
 getindex{T, S}(hx::HVector{T, S}, i) = 
-    HTuple(hx, hx.idxs[i]+one(S), hx.idxs[i+1])
+    HTuple{T, S}(hx, hx.idxs[i]+one(S), hx.idxs[i+1])
 
 # push a full vector - only works if storage is locked
 function push!{T, S}(hx::HVector{T, S}, x::AbstractVector{T})
@@ -174,8 +174,6 @@ immutable HTuple{T<:Number, S<:Integer} <: AbstractVector{T}
     start::Int
     stop::Int
 end
-HTuple{T, S}(hx::HVector{T, S}, start::Integer, stop::Integer) = 
-    HTuple{T, S}(hx, start, stop)
 
 eltype{T}(x::HTuple{T}) = T
 size(x::HTuple) = (length(x), )
