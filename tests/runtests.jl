@@ -1,5 +1,5 @@
 using Base.Test
-using HVectors
+using HeterogeneousVectors
 
 # test ==
 

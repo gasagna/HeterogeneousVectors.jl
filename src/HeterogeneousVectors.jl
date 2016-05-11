@@ -1,4 +1,4 @@
-module HVectors 
+module HeterogeneousVectors 
 
 import Base: length, 
              getindex,
