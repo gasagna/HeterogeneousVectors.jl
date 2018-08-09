@@ -154,6 +154,15 @@ function Base.push!(hx::HVector{T}, x::T) where {T}
     return hx
 end
 
+# macro - could be improved as it now requires the hx argument
+macro unlocked(hx, expr)
+    quote 
+        unlock($(esc(hx)))
+        $(esc(expr))
+        lock($(esc(hx)))
+    end
+end
+
 # ~~~ HTuple ~~~
 struct HTuple{T<:Number, S<:Integer} <: AbstractVector{T}
     hx::HVector{T, S}
