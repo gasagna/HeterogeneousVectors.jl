@@ -125,8 +125,11 @@ mutable struct HVector{T<:Number, S<:Integer} <: AbstractVector{T}
 end
 
 Base.size(hx::HVector) = (length(hx.idxs) - 1, )
-Base.getindex(hx::HVector{T, S}, i) where {T, S} = 
-    HTuple{T, S}(hx, hx.idxs[i]+one(S), hx.idxs[i+1])
+@inline function Base.getindex(hx::HVector{T, S}, i) where {T, S}
+    @boundscheck checkbounds(hx, i)
+    @inbounds ret = HTuple{T, S}(hx, hx.idxs[i]+one(S), hx.idxs[i+1])
+    return ret
+end
 
 idxtype(hx::HVector{T, S}) where {T, S} = S
 
@@ -171,6 +174,11 @@ struct HTuple{T<:Number, S<:Integer} <: AbstractVector{T}
 end
 
 Base.size(x::HTuple) = (x.stop - x.start + 1, )
-Base.getindex(x::HTuple, i::Integer) = x.hx.data[x.start + i - 1]
+
+@inline function Base.getindex(x::HTuple, i::Integer)
+    @boundscheck checkbounds(x, i)
+    @inbounds ret = x.hx.data[x.start + i - 1]
+    return ret
+end
 
 end
