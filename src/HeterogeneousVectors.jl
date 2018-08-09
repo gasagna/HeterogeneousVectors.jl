@@ -8,10 +8,10 @@ import Base: length,
              size,
              lock, 
              unlock,
-             ==,
-             call
+             islocked,
+             ==
 
-export HVector, islocked, @unlocked, idxtype
+export HVector, @unlocked, idxtype
 
 """
     The type `HVector` is a container type that mimics the behaviour of an 
@@ -105,43 +105,41 @@ export HVector, islocked, @unlocked, idxtype
     to achieve the same thing and achieve the same effect.
 
 """
-type HVector{T<:Number, S<:Integer} <: AbstractVector{T}
-    data::Vector{T}
-    idxs::Vector{S}
+mutable struct HVector{T<:Number, S<:Integer} <: AbstractVector{T}
+      data::Vector{T}
+      idxs::Vector{S}
     locked::Bool
     pushed::Int
-    HVector() = new(T[], S[0], true, 0)
-    function HVector(data::Vector{T}, idxs::Vector{S}, chksorted::Bool=true) 
+    function HVector(data::Vector{T}, 
+                     idxs::Vector{S}, 
+                chksorted::Bool=true) where {T, S}
         chksorted && (issorted(idxs) || error("unsorted `idxs` vector"))
         length(data) == idxs[end] || error("length of `data` different " * 
                                            "from last element of `idxs`")
         idxs[1] == 0 || error("first element of `idxs` must be zero")
-        new(data, idxs, true, 0)
+        return new{T, S}(data, idxs, true, 0)
     end
+    # optionally construct empty structure, passing just the eltypes
+    HVector{T, S}() where {T, S} = new{T,      S}(T[],   S[0], true, 0)
+    HVector{T}()    where {T}    = new{T, UInt32}(T[], Int[0], true, 0)
 end
-HVector{T, S}(data::Vector{T}, idxs::Vector{S}, chksorted::Bool=true) = 
-    HVector{T, S}(data, idxs, chksorted)
-
-# constructor for default idx type
-# see https://groups.google.com/forum/#!topic/julia-users/gXlS6XS8S3I
-call{T}(::Type{HVector{T}}) = HVector{T, UInt32}()
 
 ==(hxa::HVector, hxb::HVector) =
    (hxa.data == hxb.data && hxa.idxs == hxb.idxs)
-eltype{T}(hx::HVector{T}) = T
-idxtype{T, S}(hx::HVector{T, S}) = S
+eltype(hx::HVector{T}) where {T} = T
+idxtype(hx::HVector{T, S}) where {T, S} = S
 size(hx::HVector) = (length(hx), )
 length(hx::HVector) = length(hx.idxs) - 1
-getindex{T, S}(hx::HVector{T, S}, i) = 
+getindex(hx::HVector{T, S}, i) where {T, S} = 
     HTuple{T, S}(hx, hx.idxs[i]+one(S), hx.idxs[i+1])
 
 # push a full vector - only works if storage is locked
-function push!{T, S}(hx::HVector{T, S}, x::AbstractVector{T})
+function push!(hx::HVector{T, S}, x::AbstractVector{T}) where {T, S}
     !(islocked(hx)) && error("HVector is unlocked. Cannot push new array!") 
     # this triggers a bug in append, so we enforce the eltype of `x` to `T`
     append!(hx.data, x)
     push!(hx.idxs, hx.idxs[end] + S(length(x)))
-    hx
+    return hx
 end
 
 # ~~~ locking mechanism to allow pushing single values ~~~
@@ -152,11 +150,11 @@ lock(hx::HVector) = (hx.locked = true;
                     nothing)
 
 # push a single value
-function push!{T}(hx::HVector{T}, x::T)
+function push!(hx::HVector{T}, x::T) where {T}
     islocked(hx) && error("HVector is locked. Cannot push a new value!") 
     push!(hx.data, x)
     hx.pushed += 1
-    hx
+    return hx
 end
 
 # macro - could be improved as it now requires the hx argument
@@ -169,13 +167,13 @@ macro unlocked(hx, expr)
 end
 
 # ~~~ HTuple ~~~
-immutable HTuple{T<:Number, S<:Integer} <: AbstractVector{T}
+struct HTuple{T<:Number, S<:Integer} <: AbstractVector{T}
     hx::HVector{T, S}
     start::Int
     stop::Int
 end
 
-eltype{T}(x::HTuple{T}) = T
+eltype(x::HTuple{T}) where {T} = T
 size(x::HTuple) = (length(x), )
 length(x::HTuple) = x.stop - x.start + 1
 getindex(x::HTuple, i::Integer) = x.hx.data[x.start + i - 1]

@@ -144,5 +144,5 @@ let xs = HVector{Int64, UInt32}()
     end
     io = IOBuffer()
     println(io, xs)
-    @test takebuf_string(io) == "[[1,2],[1,2,3,4]]\n"
+    @test String(take!(io)) == "[[1, 2], [1, 2, 3, 4]]\n"
 end
