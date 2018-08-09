@@ -124,17 +124,14 @@ mutable struct HVector{T<:Number, S<:Integer} <: AbstractVector{T}
     HVector{T}()    where {T}    = new{T, UInt32}(T[], Int[0], true, 0)
 end
 
-==(hxa::HVector, hxb::HVector) =
-   (hxa.data == hxb.data && hxa.idxs == hxb.idxs)
-eltype(hx::HVector{T}) where {T} = T
-idxtype(hx::HVector{T, S}) where {T, S} = S
-size(hx::HVector) = (length(hx), )
-length(hx::HVector) = length(hx.idxs) - 1
-getindex(hx::HVector{T, S}, i) where {T, S} = 
+Base.size(hx::HVector) = (length(hx.idxs) - 1, )
+Base.getindex(hx::HVector{T, S}, i) where {T, S} = 
     HTuple{T, S}(hx, hx.idxs[i]+one(S), hx.idxs[i+1])
 
+idxtype(hx::HVector{T, S}) where {T, S} = S
+
 # push a full vector - only works if storage is locked
-function push!(hx::HVector{T, S}, x::AbstractVector{T}) where {T, S}
+function Base.push!(hx::HVector{T, S}, x::AbstractVector{T}) where {T, S}
     !(islocked(hx)) && error("HVector is unlocked. Cannot push new array!") 
     # this triggers a bug in append, so we enforce the eltype of `x` to `T`
     append!(hx.data, x)
@@ -143,14 +140,14 @@ function push!(hx::HVector{T, S}, x::AbstractVector{T}) where {T, S}
 end
 
 # ~~~ locking mechanism to allow pushing single values ~~~
-islocked(hx::HVector) = hx.locked
+Base.islocked(hx::HVector) = hx.locked
 unlock(hx::HVector) = (hx.pushed = 0; hx.locked = false; nothing)
 lock(hx::HVector) = (hx.locked = true; 
                     hx.pushed != 0 && push!(hx.idxs, hx.idxs[end] + hx.pushed); 
                     nothing)
 
 # push a single value
-function push!(hx::HVector{T}, x::T) where {T}
+function Base.push!(hx::HVector{T}, x::T) where {T}
     islocked(hx) && error("HVector is locked. Cannot push a new value!") 
     push!(hx.data, x)
     hx.pushed += 1
@@ -164,9 +161,7 @@ struct HTuple{T<:Number, S<:Integer} <: AbstractVector{T}
     stop::Int
 end
 
-eltype(x::HTuple{T}) where {T} = T
-size(x::HTuple) = (length(x), )
-length(x::HTuple) = x.stop - x.start + 1
-getindex(x::HTuple, i::Integer) = x.hx.data[x.start + i - 1]
+Base.size(x::HTuple) = (x.stop - x.start + 1, )
+Base.getindex(x::HTuple, i::Integer) = x.hx.data[x.start + i - 1]
 
 end
